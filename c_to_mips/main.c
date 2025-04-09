@@ -198,22 +198,27 @@ int main()
 
 	initialize_IO(frame_location);
 
-	// Read smem (copy of initialize_smem, smem array passed in, doesn't change screen)
-	// Depending on if possible in mips just modify initialize smem to also write to current_smem,
-	// Include boolean parameter for clearing screen and printing char
+	// Read smem (copy of initialize_smem, just doesn't use same array)
 	read_smem(frame_location);
 
 	int oldrow, oldcol;
 	int row = 27, col = 21, key = 0, keynew;
 	int playing = 1;
 	int accelX = 0;
+	long period;
 
 	while (playing)
 	{
 		oldrow = row;
 		oldcol = col;
-		keynew = pause_and_getkey(20 - (2 * current_frame) - (int)(accelX / 32));
+		keynew = pause_and_getkey(50 - (current_frame << 1) - ((accelX >> 5) + (accelX >> 7)));
 		accelX = get_accelX();
+
+		// accelX * approx 438941 + 156128, or normalized_acceleration * avg(periods) + min(periods)
+		period = (accelX << 18) + (accelX << 17) + (accelX << 15) + (accelX << 13) + (accelX << 12) + (accelX << 9) + (accelX << 7) + (accelX << 5) + 156128;
+		// Normalize based on max val of accelX (32*15)
+		period = (period >> 9) + (period >> 13) + (period >> 17) + (period >> 21);
+		put_sound(period);
 
 		if (keynew != 0)
 			key = keynew;
@@ -275,4 +280,4 @@ int main()
 }
 
 // The file below has the implementation of all of the helper functions
-#include "procs.c"
+#include "no_procs.c"
